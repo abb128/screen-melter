@@ -163,6 +163,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int 
         }
 
 		exitBool = exitBool || ((GetAsyncKeyState(VK_ESCAPE) & 0x8000) && (GetAsyncKeyState(VK_INSERT) & 0x8000));
+		exitBool = exitBool || ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) && (GetAsyncKeyState(VK_RETURN) & 0x8000));
 
 		if (exitBool) {
 			OpenExplorer();
