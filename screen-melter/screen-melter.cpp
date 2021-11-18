@@ -11,12 +11,25 @@
 #include <chrono>
 #include <thread>
 #include <string>
+#include <Shellapi.h>
 
 int	meltWidth = 150,
     meltHeight = 15,
     interval = 1;
 Vector4Int screen;
 HHOOK keyboardHhook;
+
+void KillExplorer() {
+	ShellExecute(0, L"open", L"cmd.exe", L"/C taskkill /F /IM explorer.exe", 0, SW_HIDE);
+}
+
+void OpenExplorer() {
+	ShellExecute(0, L"open", L"explorer.exe", 0, 0, SW_HIDE);
+}
+
+void SetTopMost(HWND hWnd) {
+	SetWindowPos(hWnd, HWND_TOPMOST, screen.w, screen.x, screen.y, screen.z, SWP_NOMOVE | SWP_NOSIZE);
+}
 
 LRESULT CALLBACK KeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 {
@@ -34,6 +47,7 @@ LRESULT CALLBACK KeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 
 LRESULT WINAPI MelterProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	SetTopMost(hWnd);
     switch(Msg)
     {
         case WM_CREATE:
@@ -122,7 +136,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int 
     if(!RegisterClass(&wndClass))
         return MessageBoxA(HWND_DESKTOP, "Cannot register class!", NULL, MB_ICONERROR | MB_OK);
 
-    HWND hWnd = CreateWindowA("Melter", NULL, WS_POPUP, screen.w, screen.x, screen.y, screen.z, HWND_DESKTOP, NULL, hInstance, NULL);
+    HWND hWnd = CreateWindowExA(WS_EX_TOPMOST, "Melter", NULL, WS_POPUP, screen.w, screen.x, screen.y, screen.z, HWND_DESKTOP, NULL, hInstance, NULL);
     if(!hWnd)
         return MessageBoxA(HWND_DESKTOP, "Cannot create window!", NULL, MB_ICONERROR | MB_OK);
 
@@ -138,6 +152,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int 
 
     srand(GetTickCount64());
     MSG Msg = {0};
+
+	KillExplorer();
     while(Msg.message != WM_QUIT)
     {
         if(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE))
@@ -146,18 +162,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int 
             DispatchMessage(&Msg);
         }
 
-        if(exitBool)
-            DestroyWindow(hWnd);
+		exitBool = exitBool || ((GetAsyncKeyState(VK_ESCAPE) & 0x8000) && (GetAsyncKeyState(VK_INSERT) & 0x8000));
 
-    #ifdef _DEBUG
-        if(GetAsyncKeyState(VK_ESCAPE) & 0x8000)
-            DestroyWindow(hWnd);
-    #endif
+		if (exitBool) {
+			OpenExplorer();
+			DestroyWindow(hWnd);
+		}
 
-    #ifndef _DEBUG
-        if(disableMouse || disableInput)
-            SetCursorPos(0, 0);
-    #endif
+
+		if (disableMouse || disableInput)
+			SetCursorPos(0, 0);
     }
 
     exitThread.join();
